@@ -1,3 +1,3 @@
 # nix-notify
 
-Notify yourself of available updates
+Notify yourself of available nixpkgs updates

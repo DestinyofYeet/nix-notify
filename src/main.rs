@@ -1,6 +1,9 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
 
 use clap::Parser;
@@ -16,7 +19,7 @@ use signal_hook::{
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::args::Args;
+use crate::{args::Args, rss::feed::RssFeed};
 
 pub mod args;
 pub mod rss;
@@ -50,6 +53,15 @@ fn main() -> Result<(), anyhow::Error> {
     let mut signals = SignalsInfo::<WithOrigin>::new(&sigs)?;
 
     let server = DjangoServer::new(8, TracingStrategy {}, SqliteStrategy::new_memory())?;
+
+    let unstable_feed = RssFeed::new(
+        "https://github.com/NixOS/nixpkgs/commits/nixos-unstable.atom".to_string(),
+        Duration::from_secs(10),
+    );
+
+    server
+        .get_task_handler()
+        .spawn_task_long_running(unstable_feed)?;
 
     for info in &mut signals {
         info!("Received signal {:?}", info);

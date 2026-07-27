@@ -1,11 +1,9 @@
-use std::sync::{Arc, Mutex, atomic::AtomicBool};
+use std::time::Duration;
 
-use django_rs::chrono::Duration;
+type Type = String;
 
 #[derive(Debug)]
 pub struct RssFeed {
-    pub(super) url: String,
+    pub(super) url: Type,
     pub(super) delay: Duration,
-
-    pub(super) stop_signal: Arc<AtomicBool>,
 }
