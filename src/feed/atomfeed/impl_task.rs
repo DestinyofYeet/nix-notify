@@ -5,9 +5,9 @@ use django_rs::tasks::{
     taskrunnable::{TaskResultable, TaskRunnable},
 };
 
-use crate::rss::feed::RssFeed;
+use crate::{feed::atomfeed::AtomFeed, processor::commands::ProcessorCommand};
 
-impl TaskRunnable for RssFeed {
+impl TaskRunnable for AtomFeed {
     fn run(
         &mut self,
         logger: django_rs::tasks::worker_logger::WorkerLogger,
@@ -16,9 +16,12 @@ impl TaskRunnable for RssFeed {
             logger.trace("Fetching rss feed");
 
             match self.fetch() {
-                Ok(value) => {
-                    logger.debug(&format!("{:?}", value));
-                }
+                Ok(value) => match self.processor_tx.send(ProcessorCommand::Process(value)) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        logger.error(&format!("Failed to send command to processor: {e}"));
+                    }
+                },
                 Err(e) => {
                     logger.error(&format!("Failed to fetch feed: {e}"));
                 }
@@ -30,7 +33,7 @@ impl TaskRunnable for RssFeed {
     }
 }
 
-impl TaskResultable for RssFeed {
+impl TaskResultable for AtomFeed {
     type Result = ();
 
     fn downcast(_: TaskResult) -> Self::Result {}

@@ -1,8 +1,8 @@
 use django_rs::chrono::{DateTime, Utc};
 
-use crate::rss::feeditem::RssItem;
+use crate::feed::feeditem::FeedItem;
 
-impl RssItem {
+impl FeedItem {
     pub fn new(
         message: String,
         commit: String,

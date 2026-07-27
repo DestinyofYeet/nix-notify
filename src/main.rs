@@ -19,10 +19,11 @@ use signal_hook::{
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::{args::Args, rss::feed::RssFeed};
+use crate::{args::Args, feed::atomfeed::AtomFeed, processor::Processor};
 
 pub mod args;
-pub mod rss;
+pub mod feed;
+pub mod processor;
 
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
@@ -54,10 +55,18 @@ fn main() -> Result<(), anyhow::Error> {
 
     let server = DjangoServer::new(8, TracingStrategy {}, SqliteStrategy::new_memory())?;
 
-    let unstable_feed = RssFeed::new(
+    let processor = Processor::new();
+    let processor_tx = processor.get_channel();
+
+    let unstable_feed = AtomFeed::new(
         "https://github.com/NixOS/nixpkgs/commits/nixos-unstable.atom".to_string(),
-        Duration::from_secs(10),
+        Duration::from_mins(10),
+        processor_tx.clone(),
     );
+
+    server
+        .get_task_handler()
+        .spawn_task_long_running(processor)?;
 
     server
         .get_task_handler()

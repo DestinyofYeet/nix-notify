@@ -1,10 +1,10 @@
 use django_rs::chrono::{DateTime, Utc};
 use itertools::Itertools;
 
-use crate::rss::{error::RssError, feed::RssFeed, feeditem::RssItem};
+use crate::feed::{atomfeed::AtomFeed, error::RssError, feeditem::FeedItem};
 
-impl RssFeed {
-    pub fn fetch(&self) -> Result<Vec<RssItem>, RssError> {
+impl AtomFeed {
+    pub fn fetch(&self) -> Result<Vec<FeedItem>, RssError> {
         let content =
             reqwest::blocking::get(&self.url).map_err(|e| RssError::Fetch(e.to_string()))?;
 
@@ -19,7 +19,7 @@ impl RssFeed {
         let feed =
             feed_rs::parser::parse(&bytes[..]).map_err(|e| RssError::Channel(e.to_string()))?;
 
-        let maybe_items: Vec<Result<RssItem, RssError>> = feed
+        let maybe_items: Vec<Result<FeedItem, RssError>> = feed
             .entries
             .into_iter()
             .map(|entry| {
@@ -48,11 +48,11 @@ impl RssFeed {
                     None => return Err(RssError::Item("No link found".to_string())),
                 };
 
-                Ok(RssItem::new(message, commit, updated, author, link))
+                Ok(FeedItem::new(message, commit, updated, author, link))
             })
             .collect_vec();
 
-        let mut items: Vec<RssItem> = Vec::new();
+        let mut items: Vec<FeedItem> = Vec::new();
 
         for item in maybe_items.into_iter() {
             items.push(item?);
