@@ -1,4 +1,4 @@
-use std::{sync::atomic::Ordering, thread};
+use std::thread;
 
 use django_rs::tasks::{
     task::TaskResult,
@@ -13,7 +13,7 @@ impl TaskRunnable for AtomFeed {
         logger: django_rs::tasks::worker_logger::WorkerLogger,
     ) -> Box<dyn std::any::Any + Send + Sync> {
         loop {
-            logger.trace("Fetching rss feed");
+            logger.trace(&format!("Fetching rss feed '{}'", self.name));
 
             match self.fetch() {
                 Ok(value) => match self.processor_tx.send(ProcessorCommand::Process(value)) {

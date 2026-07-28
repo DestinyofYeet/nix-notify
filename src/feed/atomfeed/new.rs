@@ -6,8 +6,14 @@ use std::{
 use crate::{feed::atomfeed::AtomFeed, processor::commands::ProcessorCommand};
 
 impl AtomFeed {
-    pub fn new(url: String, delay: Duration, processor_tx: Sender<ProcessorCommand>) -> Self {
+    pub fn new(
+        name: String,
+        url: String,
+        delay: Duration,
+        processor_tx: Sender<ProcessorCommand>,
+    ) -> Self {
         Self {
+            name,
             url,
             delay,
             processor_tx,

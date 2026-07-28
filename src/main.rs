@@ -19,7 +19,11 @@ use signal_hook::{
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::{args::Args, feed::atomfeed::AtomFeed, processor::Processor};
+use crate::{
+    args::Args,
+    feed::atomfeed::AtomFeed,
+    processor::{Processor, commands::ProcessorCommand},
+};
 
 pub mod args;
 pub mod feed;
@@ -58,9 +62,22 @@ fn main() -> Result<(), anyhow::Error> {
     let processor = Processor::new();
     let processor_tx = processor.get_channel();
 
+    processor_tx.send(ProcessorCommand::Subscribe {
+        package: "zerofs".to_string(),
+        notify_information: "ahhhh".to_string(),
+    })?;
+
     let unstable_feed = AtomFeed::new(
+        "unstable".to_string(),
         "https://github.com/NixOS/nixpkgs/commits/nixos-unstable.atom".to_string(),
-        Duration::from_mins(10),
+        Duration::from_mins(1),
+        processor_tx.clone(),
+    );
+
+    let master_feed = AtomFeed::new(
+        "master".to_string(),
+        "https://github.com/NixOS/nixpkgs/commits/master.atom".to_string(),
+        Duration::from_mins(1),
         processor_tx.clone(),
     );
 
@@ -71,6 +88,10 @@ fn main() -> Result<(), anyhow::Error> {
     server
         .get_task_handler()
         .spawn_task_long_running(unstable_feed)?;
+
+    server
+        .get_task_handler()
+        .spawn_task_long_running(master_feed)?;
 
     for info in &mut signals {
         info!("Received signal {:?}", info);

@@ -48,7 +48,20 @@ impl AtomFeed {
                     None => return Err(RssError::Item("No link found".to_string())),
                 };
 
-                Ok(FeedItem::new(message, commit, updated, author, link))
+                let package = match message.split(":").collect_vec().first() {
+                    Some(value) => value.to_string(),
+                    None => return Err(RssError::Item("Failed to find package".to_string())),
+                };
+
+                Ok(FeedItem::new(
+                    self.name.clone(),
+                    message,
+                    commit,
+                    updated,
+                    author,
+                    link,
+                    package,
+                ))
             })
             .collect_vec();
 
