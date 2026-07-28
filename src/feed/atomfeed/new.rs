@@ -1,22 +1,9 @@
-use std::{
-    sync::{Mutex, mpsc::Sender},
-    time::Duration,
-};
+use std::time::Duration;
 
-use crate::{feed::atomfeed::AtomFeed, processor::commands::ProcessorCommand};
+use crate::feed::atomfeed::AtomFeed;
 
 impl AtomFeed {
-    pub fn new(
-        name: String,
-        url: String,
-        delay: Duration,
-        processor_tx: Sender<ProcessorCommand>,
-    ) -> Self {
-        Self {
-            name,
-            url,
-            delay,
-            processor_tx,
-        }
+    pub fn new(name: String, url: String, delay: Duration) -> Self {
+        Self { name, url, delay }
     }
 }

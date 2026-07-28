@@ -1,27 +1,36 @@
 use std::thread;
 
-use django_rs::tasks::{
-    task::TaskResult,
-    taskrunnable::{TaskResultable, TaskRunnable},
+use django_rs::{
+    server::database_strategy::DatabaseStrategy,
+    tasks::{
+        runnable_info::RunnableInfo,
+        task::TaskResult,
+        taskrunnable::{TaskResultable, TaskRunnable},
+    },
 };
 
-use crate::{feed::atomfeed::AtomFeed, processor::commands::ProcessorCommand};
+use crate::{feed::atomfeed::AtomFeed, processor::ProcessFeedItem};
 
-impl TaskRunnable for AtomFeed {
-    fn run(
-        &mut self,
-        logger: django_rs::tasks::worker_logger::WorkerLogger,
-    ) -> Box<dyn std::any::Any + Send + Sync> {
+impl<D> TaskRunnable<D> for AtomFeed
+where
+    D: DatabaseStrategy,
+{
+    fn run(&mut self, info: RunnableInfo<D>) -> Box<dyn std::any::Any + Send + Sync> {
+        let logger = info.get_logger();
         loop {
             logger.trace(&format!("Fetching rss feed '{}'", self.name));
 
             match self.fetch() {
-                Ok(value) => match self.processor_tx.send(ProcessorCommand::Process(value)) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        logger.error(&format!("Failed to send command to processor: {e}"));
+                Ok(value) => {
+                    for item in value {
+                        match info.spawn_task(ProcessFeedItem::new(item)) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                logger.error(&format!("Failed to spawn processing task: {e}"))
+                            }
+                        }
                     }
-                },
+                }
                 Err(e) => {
                     logger.error(&format!("Failed to fetch feed: {e}"));
                 }

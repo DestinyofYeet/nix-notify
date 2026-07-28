@@ -1,4 +1,3 @@
-use django_rs::chrono::{DateTime, Utc};
 use itertools::Itertools;
 
 use crate::feed::{atomfeed::AtomFeed, error::RssError, feeditem::FeedItem};

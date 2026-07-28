@@ -1,16 +1,9 @@
-use std::{
-    sync::{Mutex, mpsc::Sender},
-    time::Duration,
-};
-
-use crate::processor::commands::ProcessorCommand;
+use std::time::Duration;
 
 type Type = String;
 
-#[derive(Debug)]
 pub struct AtomFeed {
     pub(super) name: String,
     pub(super) url: Type,
     pub(super) delay: Duration,
-    pub(super) processor_tx: Sender<ProcessorCommand>,
 }

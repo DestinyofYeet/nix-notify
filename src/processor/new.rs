@@ -1,14 +1,7 @@
-use std::sync::{Mutex, mpsc::channel};
+use crate::{feed::feeditem::FeedItem, processor::ProcessFeedItem};
 
-use crate::processor::Processor;
-
-impl Processor {
-    pub fn new() -> Self {
-        let (sender, recv) = channel();
-
-        Self {
-            recv: Mutex::new(recv),
-            sender,
-        }
+impl ProcessFeedItem {
+    pub fn new(item: FeedItem) -> Self {
+        Self { item }
     }
 }

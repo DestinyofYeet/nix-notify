@@ -1,14 +1,14 @@
 use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::{Arc, atomic::AtomicBool},
     time::Duration,
 };
 
 use clap::Parser;
 use django_rs::{
-    server::{DjangoServer, database_strategy::default_strategies::SqliteStrategy},
+    server::{
+        DjangoServer,
+        database_strategy::{DatabaseStrategy, default_strategies::SqliteStrategy},
+    },
     tasks::logstrategy::default_strategies::tracing_strategy::TracingStrategy,
 };
 use signal_hook::{
@@ -21,8 +21,7 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     args::Args,
-    feed::atomfeed::AtomFeed,
-    processor::{Processor, commands::ProcessorCommand},
+    feed::{atomfeed::AtomFeed, feeditem::FeedItem},
 };
 
 pub mod args;
@@ -33,7 +32,7 @@ fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
     let level = format!(
-        "{},reqwest=info,h2=info,hyper_util=info,rustls_platform_verifier=info",
+        "{},reqwest=info,h2=info,hyper_util=info,rustls_platform_verifier=info,django_rs::server::database_strategy=info",
         match args.verbose {
             0 => "info",
             1 => "debug",
@@ -57,33 +56,25 @@ fn main() -> Result<(), anyhow::Error> {
     sigs.push(SIGHUP);
     let mut signals = SignalsInfo::<WithOrigin>::new(&sigs)?;
 
-    let server = DjangoServer::new(8, TracingStrategy {}, SqliteStrategy::new_memory())?;
+    let mut server = DjangoServer::new(
+        8,
+        TracingStrategy {},
+        SqliteStrategy::new("tmp/database.db"),
+    )?;
 
-    let processor = Processor::new();
-    let processor_tx = processor.get_channel();
-
-    processor_tx.send(ProcessorCommand::Subscribe {
-        package: "zerofs".to_string(),
-        notify_information: "ahhhh".to_string(),
-    })?;
+    server.get_database().migrate_model::<FeedItem>()?;
 
     let unstable_feed = AtomFeed::new(
         "unstable".to_string(),
         "https://github.com/NixOS/nixpkgs/commits/nixos-unstable.atom".to_string(),
-        Duration::from_mins(1),
-        processor_tx.clone(),
+        Duration::from_mins(5),
     );
 
     let master_feed = AtomFeed::new(
         "master".to_string(),
         "https://github.com/NixOS/nixpkgs/commits/master.atom".to_string(),
-        Duration::from_mins(1),
-        processor_tx.clone(),
+        Duration::from_mins(5),
     );
-
-    server
-        .get_task_handler()
-        .spawn_task_long_running(processor)?;
 
     server
         .get_task_handler()
