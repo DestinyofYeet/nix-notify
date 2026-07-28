@@ -21,10 +21,12 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     args::Args,
+    config::Config,
     feed::{atomfeed::AtomFeed, feeditem::FeedItem},
 };
 
 pub mod args;
+pub mod config;
 pub mod feed;
 pub mod processor;
 
@@ -56,33 +58,63 @@ fn main() -> Result<(), anyhow::Error> {
     sigs.push(SIGHUP);
     let mut signals = SignalsInfo::<WithOrigin>::new(&sigs)?;
 
+    if !args.configuration.exists() {
+        return Err(anyhow::format_err!(
+            "Configuration file {:?} does not exist!",
+            args.configuration
+        ));
+    }
+
+    let configuration: Config = {
+        let content = std::fs::read_to_string(args.configuration)?;
+        toml::from_str(&content)?
+    };
+
+    let path = {
+        match &configuration.general.database_path.parent() {
+            Some(parent) => {
+                if parent.exists() {
+                    configuration.general.database_path
+                } else {
+                    return Err(anyhow::format_err!(
+                        "Parent folder of database path {:?} does not exist!",
+                        parent
+                    ));
+                }
+            }
+            None => {
+                if !configuration.general.database_path.exists() {
+                    return Err(anyhow::format_err!(
+                        "Database path {:?} does not exist!",
+                        configuration.general.database_path
+                    ));
+                }
+
+                configuration.general.database_path
+            }
+        }
+    };
+
     let mut server = DjangoServer::new(
         8,
         TracingStrategy {},
-        SqliteStrategy::new("tmp/database.db"),
+        SqliteStrategy::new(path.to_string_lossy().to_string()),
     )?;
 
     server.get_database().migrate_model::<FeedItem>()?;
 
-    let unstable_feed = AtomFeed::new(
-        "unstable".to_string(),
-        "https://github.com/NixOS/nixpkgs/commits/nixos-unstable.atom".to_string(),
-        Duration::from_mins(5),
-    );
+    for branch in configuration.branches.iter() {
+        let feed = AtomFeed::new(
+            branch.name.clone(),
+            format!(
+                "https://github.com/NixOS/nixpkgs/commits/{}.atom",
+                branch.name
+            ),
+            Duration::from_mins(branch.delay_minutes),
+        );
 
-    let master_feed = AtomFeed::new(
-        "master".to_string(),
-        "https://github.com/NixOS/nixpkgs/commits/master.atom".to_string(),
-        Duration::from_mins(5),
-    );
-
-    server
-        .get_task_handler()
-        .spawn_task_long_running(unstable_feed)?;
-
-    server
-        .get_task_handler()
-        .spawn_task_long_running(master_feed)?;
+        server.get_task_handler().spawn_task_long_running(feed)?;
+    }
 
     for info in &mut signals {
         info!("Received signal {:?}", info);

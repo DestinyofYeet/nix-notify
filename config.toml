@@ -1,0 +1,14 @@
+[[branches]]
+name = "nixos-unstable"
+delay_minutes = 2
+
+[[branches]]
+name = "master"
+delay_minutes = 2
+
+[[branches]]
+name = "nixos-26.05"
+delay_minutes = 2
+
+[general]
+database_path = "tmp/database.db"
