@@ -76,7 +76,7 @@ fn main() -> Result<(), anyhow::Error> {
                     configuration.general.database_path
                 } else {
                     return Err(anyhow::format_err!(
-                        "Parent folder of database path {:?} does not exist!",
+                        "Parent folder {:?} of database path does not exist!",
                         parent
                     ));
                 }

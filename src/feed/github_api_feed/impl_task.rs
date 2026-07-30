@@ -90,8 +90,6 @@ where
             let mut page: NonZeroU64 = NonZero::new(1).unwrap();
             let items_per_page: NonZeroU64 = NonZero::new(100).unwrap();
 
-            let mut new_last_item: Option<FeedItem> = None;
-
             loop {
                 logger.debug(&format!(
                     "Fetching Github api for feed '{}'",
@@ -121,16 +119,13 @@ where
                     break;
                 }
 
-                new_last_item = Some(
-                    values
-                        .first()
-                        .expect("to have checked that the returning vec is not empty")
-                        .clone(),
-                );
-
                 let length = values.len();
 
                 for value in values.into_iter() {
+                    if value.get_updated_at() > last_item.get_updated_at() {
+                        last_item = value.clone();
+                    }
+
                     match info.spawn_task(ProcessFeedItem::new(value)) {
                         Ok(_) => {}
                         Err(e) => {
@@ -140,17 +135,11 @@ where
                 }
 
                 if length as u64 != items_per_page.get() {
-                    // we have not exhausted the page
+                    logger.trace("early break");
                     break;
                 }
 
                 page = page.checked_add(1).unwrap();
-            }
-
-            if let Some(new_last_item) = new_last_item
-                && new_last_item.get_updated_at() > last_item.get_updated_at()
-            {
-                last_item = new_last_item
             }
 
             logger.trace(&format!("last_item post: {last_item:?}"));
