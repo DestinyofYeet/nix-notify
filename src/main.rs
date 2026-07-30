@@ -1,4 +1,7 @@
-use std::sync::{Arc, atomic::AtomicBool};
+use std::{
+    collections::HashMap,
+    sync::{Arc, atomic::AtomicBool},
+};
 
 use clap::Parser;
 use django_rs::{
@@ -8,6 +11,7 @@ use django_rs::{
     },
     tasks::logstrategy::default_strategies::tracing_strategy::TracingStrategy,
 };
+use reqwest::header::IF_NONE_MATCH;
 use signal_hook::{
     consts::{SIGHUP, TERM_SIGNALS},
     flag,
@@ -20,11 +24,13 @@ use crate::{
     args::Args,
     config::{RawConfig, ValidatedFeedKind},
     feed::{atomfeed::AtomFeed, feeditem::FeedItem, github_api_feed::GithubApiFeed},
+    notifications::NOTIFICATION_CONFIGS,
 };
 
 pub mod args;
 pub mod config;
 pub mod feed;
+pub mod notifications;
 pub mod processor;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -93,6 +99,18 @@ fn main() -> Result<(), anyhow::Error> {
             }
         }
     };
+
+    {
+        let mut notifications_map = HashMap::new();
+
+        for notifications in configuration.notifications {
+            notifications_map.insert(notifications.name, notifications.kind);
+        }
+
+        if NOTIFICATION_CONFIGS.set(notifications_map).is_err() {
+            return Err(anyhow::format_err!("Unable to initialize OnceLock"));
+        };
+    }
 
     let mut server = DjangoServer::new(
         8,

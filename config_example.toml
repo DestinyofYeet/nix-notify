@@ -24,7 +24,8 @@ source = "custom"
 kind = "github_atom"
 # if branch is not set, it will default to the `name` field
 branch = "custom"
-url = "https://github.com/some/repo/"
+repo_owner = "some"
+repo_name = "repo"
 
 [[feeds]]
 name = "custom-repo-api"
@@ -46,3 +47,14 @@ database_path = "tmp/database.db"
 #
 # Supports reading in from a file via "@:filePath"
 github_api_token = "xxx"
+
+
+
+[[notifications]]
+name = "E-Mail"
+kind = "email"
+smtp_host = "mail.example.com"
+smtp_port = 465
+envelope_from = ""
+login_username = ""
+login_password = ""

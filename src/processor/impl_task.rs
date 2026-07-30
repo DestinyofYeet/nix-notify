@@ -7,7 +7,9 @@ use django_rs::{
     },
 };
 
-use crate::{feed::feeditem::FeedItem, processor::ProcessFeedItem};
+use crate::{
+    feed::feeditem::FeedItem, notifications::SendNotification, processor::ProcessFeedItem,
+};
 
 impl<D> TaskRunnable<D> for ProcessFeedItem
 where
@@ -47,6 +49,20 @@ where
                 logger.error(&format!("Failed to save model: {e}"));
             }
         };
+
+        if self.item.get_package() == "flatpak-builder-tools" {
+            match info.spawn_task(SendNotification::new(
+                "E-Mail".to_string(),
+                "ole@ole.blue".to_string(),
+                self.item.get_package().to_string(),
+                self.item.get_message().to_string(),
+            )) {
+                Ok(_) => {}
+                Err(e) => {
+                    logger.error(&format!("Failed to queue Notification task: {e}!"));
+                }
+            }
+        }
 
         ret_value
     }

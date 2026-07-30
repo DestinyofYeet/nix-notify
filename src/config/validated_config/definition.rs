@@ -1,9 +1,10 @@
-use std::{path::PathBuf, time::Duration};
+use std::{num::NonZero, path::PathBuf, time::Duration};
 
 #[derive(Debug, Clone)]
 pub struct ValidatedConfig {
     pub general: ValidatedGeneral,
     pub feeds: Vec<ValidatedFeed>,
+    pub notifications: Vec<ValidatedNotification>,
 }
 
 #[derive(Debug, Clone)]
@@ -30,4 +31,24 @@ pub enum ValidatedFeedKind {
         repo_name: String,
         branch: String,
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedNotification {
+    pub name: String,
+    pub kind: ValidatedNotificationKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum ValidatedNotificationKind {
+    Email(ValidatedEmailConfig),
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedEmailConfig {
+    pub smtp_host: String,
+    pub smtp_port: NonZero<u64>,
+    pub envelope_from: String,
+    pub login_username: String,
+    pub login_password: String,
 }

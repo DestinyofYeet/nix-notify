@@ -5,6 +5,7 @@ mod error;
 mod validate;
 mod validate_feed;
 mod validate_general;
+mod validate_notification;
 
 pub use definition::*;
 pub use validated_config::*;

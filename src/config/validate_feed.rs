@@ -10,7 +10,6 @@ impl Feed {
             delay_minutes,
             source,
             kind,
-            url,
             repo_owner,
             repo_name,
         } = self;
@@ -19,83 +18,62 @@ impl Feed {
 
         let duration = Duration::from_mins(delay_minutes);
 
-        let kind = match kind {
-            FeedKind::GithubAtom => match source {
-                FeedSource::Nixpkgs => ValidatedFeedKind::Atom {
-                    url: format!("https://github.com/NixOS/nixpkgs/commits/{}.atom", branch),
-                },
-                FeedSource::Custom => {
-                    let url = match url {
-                        Some(url) => url,
-                        None => {
+        let (repo_owner, repo_name) = match source {
+            FeedSource::Nixpkgs => ("NixOS".to_string(), "nixpkgs".to_string()),
+            FeedSource::Custom => {
+                let repo_owner = match repo_owner {
+                    Some(value) => {
+                        if value.is_empty() {
                             return Err(ConfigError::Validate(format!(
-                                "feed {}: url is not set, but source is custom!",
+                                "Feed {}: repo_owner is empty, but source is custom!",
                                 name
                             )));
                         }
-                    };
 
-                    if url.is_empty() {
+                        value
+                    }
+                    None => {
                         return Err(ConfigError::Validate(format!(
-                            "feed {}: url is empty, but source is custom!",
+                            "Feed {}: repo_owner is not set, but source is custom!",
                             name
                         )));
                     }
+                };
 
-                    ValidatedFeedKind::Atom { url }
-                }
-            },
-            FeedKind::GithubApi => match source {
-                FeedSource::Nixpkgs => ValidatedFeedKind::GithubApi {
-                    repo_owner: "NixOS".to_string(),
-                    repo_name: "nixpkgs".to_string(),
-                    branch: branch.clone(),
-                },
-                FeedSource::Custom => {
-                    let repo_owner = match repo_owner {
-                        Some(value) => {
-                            if value.is_empty() {
-                                return Err(ConfigError::Validate(format!(
-                                    "Feed: {}: repo_owner is empty, but source is custom!",
-                                    name
-                                )));
-                            }
-
-                            value
-                        }
-                        None => {
+                let repo_name = match repo_name {
+                    Some(value) => {
+                        if value.is_empty() {
                             return Err(ConfigError::Validate(format!(
-                                "Feed {}: repo_owner is not set, but source is custom!",
+                                "Feed {}: repo_name is empty, but source is custom!",
                                 name
                             )));
                         }
-                    };
 
-                    let repo_name = match repo_name {
-                        Some(value) => {
-                            if value.is_empty() {
-                                return Err(ConfigError::Validate(format!(
-                                    "Feed {}: repo_name is empty, but source is custom!",
-                                    name
-                                )));
-                            }
-
-                            value
-                        }
-                        None => {
-                            return Err(ConfigError::Validate(format!(
-                                "Feed: {}: repo_name is not set, but source is custom!",
-                                name
-                            )));
-                        }
-                    };
-
-                    ValidatedFeedKind::GithubApi {
-                        repo_owner,
-                        repo_name,
-                        branch: branch.clone(),
+                        value
                     }
-                }
+                    None => {
+                        return Err(ConfigError::Validate(format!(
+                            "Feed {}: repo_name is not set, but source is custom!",
+                            name
+                        )));
+                    }
+                };
+
+                (repo_owner, repo_name)
+            }
+        };
+
+        let kind = match kind {
+            FeedKind::GithubAtom => ValidatedFeedKind::Atom {
+                url: format!(
+                    "https://github.com/{}/{}/commits/{}.atom",
+                    repo_owner, repo_name, branch
+                ),
+            },
+            FeedKind::GithubApi => ValidatedFeedKind::GithubApi {
+                repo_owner,
+                repo_name,
+                branch: branch.clone(),
             },
         };
 
