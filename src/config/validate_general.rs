@@ -40,8 +40,6 @@ impl General {
 
                 github_api_token = Some(content);
 
-                dbg!(&github_api_token);
-
                 info!("Read token from file");
             } else {
                 github_api_token = Some(token);
