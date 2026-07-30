@@ -162,7 +162,7 @@ impl GithubApiFeed {
 
                 let split = message.split(":").collect_vec();
                 let package = match split.first() {
-                    Some(value) => value,
+                    Some(value) => value.trim().to_string(),
                     None => {
                         return Err(ParseResp(
                             "Failed to find package in commit msg".to_string(),
@@ -171,18 +171,18 @@ impl GithubApiFeed {
                 };
 
                 let message = match split.last() {
-                    Some(value) => value,
+                    Some(value) => value.trim().to_string(),
                     None => return Err(ParseResp("Failed to find message in commit".to_string())),
                 };
 
                 Ok(FeedItem::new(
                     self.feed_name.clone(),
-                    message.to_string(),
+                    message,
                     sha,
                     timestamp,
                     name,
                     html_url,
-                    package.to_string(),
+                    package,
                 ))
             })
             .process_results(|e| e.collect_vec())?;

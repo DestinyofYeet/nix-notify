@@ -33,10 +33,7 @@ impl General {
                 let content = std::fs::read_to_string(&path)
                     .map_err(|e| ConfigError::Validate(format!("Failed to read {path:?}: {e}")))?;
 
-                let content = content
-                    .strip_suffix("\n")
-                    .expect("to trim \\n from the end of the string")
-                    .to_string();
+                let content = content.trim().to_string();
 
                 github_api_token = Some(content);
 

@@ -53,7 +53,7 @@ impl AtomFeed {
                 let split = title.split(":").collect_vec();
 
                 let message = match split.last() {
-                    Some(value) => value.to_string(),
+                    Some(value) => value.trim().to_string(),
                     None => return Err(AtomError::Item("Failed to find message".to_string())),
                 };
 
