@@ -21,7 +21,7 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     args::Args,
-    config::Config,
+    config::{Config, FeedKind, FeedSource},
     feed::{atomfeed::AtomFeed, feeditem::FeedItem},
 };
 
@@ -103,17 +103,23 @@ fn main() -> Result<(), anyhow::Error> {
 
     server.get_database().migrate_model::<FeedItem>()?;
 
-    for branch in configuration.branches.iter() {
-        let feed = AtomFeed::new(
-            branch.name.clone(),
-            format!(
-                "https://github.com/NixOS/nixpkgs/commits/{}.atom",
-                branch.name
-            ),
-            Duration::from_mins(branch.delay_minutes),
-        );
-
-        server.get_task_handler().spawn_task_long_running(feed)?;
+    for feed in configuration.feeds.iter() {
+        match feed.source {
+            FeedSource::Nixpkgs => match feed.kind {
+                FeedKind::GithubAtom => {
+                    server.get_task_handler().spawn_task(AtomFeed::new(
+                        feed.name.clone(),
+                        format!(
+                            "https://github.com/NixOS/nixpkgs/commits/{}.atom",
+                            feed.name
+                        ),
+                        Duration::from_mins(feed.delay_minutes),
+                    ))?;
+                }
+                FeedKind::GithubApi => todo!(),
+            },
+            FeedSource::Custom => todo!(),
+        }
     }
 
     for info in &mut signals {

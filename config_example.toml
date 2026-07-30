@@ -1,14 +1,21 @@
-[[branches]]
+[[feeds]]
 name = "nixos-unstable"
 delay_minutes = 2
+source = "nixpkgs"
+kind = "github_api"
 
-[[branches]]
+
+[[feeds]]
 name = "master"
 delay_minutes = 2
+source = "nixpkgs"
+kind = "github_atom"
 
-[[branches]]
+[[feeds]]
 name = "nixos-26.05"
 delay_minutes = 2
+source = "nixpkgs"
+kind = "github_atom"
 
 [general]
 database_path = "tmp/database.db"
