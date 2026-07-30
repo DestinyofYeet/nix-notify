@@ -1,3 +1,5 @@
+use django_rs::chrono::{DateTime, Utc};
+
 use crate::feed::feeditem::FeedItem;
 
 impl FeedItem {
@@ -15,5 +17,9 @@ impl FeedItem {
 
     pub fn get_feed_name(&self) -> &str {
         &self.feed_name
+    }
+
+    pub fn get_updated_at(&self) -> &DateTime<Utc> {
+        &self.updated
     }
 }

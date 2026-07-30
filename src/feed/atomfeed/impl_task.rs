@@ -18,7 +18,7 @@ where
     fn run(&mut self, info: RunnableInfo<D>) -> Box<dyn std::any::Any + Send + Sync> {
         let logger = info.get_logger();
         loop {
-            logger.trace(&format!("Fetching rss feed '{}'", self.name));
+            logger.debug(&format!("Fetching atom feed '{}'", self.name));
 
             match self.fetch() {
                 Ok(value) => {
@@ -36,7 +36,7 @@ where
                 }
             };
 
-            logger.trace(&format!("Sleeping {}s", self.delay.as_secs()));
+            logger.debug(&format!("Sleeping {}s", self.delay.as_secs()));
             thread::sleep(self.delay);
         }
     }

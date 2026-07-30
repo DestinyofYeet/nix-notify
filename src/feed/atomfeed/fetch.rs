@@ -1,55 +1,65 @@
 use itertools::Itertools;
 
-use crate::feed::{atomfeed::AtomFeed, error::RssError, feeditem::FeedItem};
+use crate::feed::{
+    atomfeed::{AtomError, AtomFeed},
+    feeditem::FeedItem,
+};
 
 impl AtomFeed {
-    pub fn fetch(&self) -> Result<Vec<FeedItem>, RssError> {
+    pub fn fetch(&self) -> Result<Vec<FeedItem>, AtomError> {
         let content =
-            reqwest::blocking::get(&self.url).map_err(|e| RssError::Fetch(e.to_string()))?;
+            reqwest::blocking::get(&self.url).map_err(|e| AtomError::Fetch(e.to_string()))?;
 
         let content = content
             .error_for_status()
-            .map_err(|e| RssError::Fetch(e.to_string()))?;
+            .map_err(|e| AtomError::Fetch(e.to_string()))?;
 
         let bytes = content
             .bytes()
-            .map_err(|e| RssError::Bytes(e.to_string()))?;
+            .map_err(|e| AtomError::Bytes(e.to_string()))?;
 
         let feed =
-            feed_rs::parser::parse(&bytes[..]).map_err(|e| RssError::Channel(e.to_string()))?;
+            feed_rs::parser::parse(&bytes[..]).map_err(|e| AtomError::Channel(e.to_string()))?;
 
-        let maybe_items: Vec<Result<FeedItem, RssError>> = feed
+        let maybe_items: Vec<Result<FeedItem, AtomError>> = feed
             .entries
             .into_iter()
             .map(|entry| {
-                let author = match entry.authors.first() {
-                    None => return Err(RssError::Item("No author found".to_string())),
-                    Some(value) => value.name.clone(),
+                let title = match entry.title {
+                    Some(value) => value.content,
+                    None => return Err(AtomError::Item("No title found".to_string())),
                 };
 
-                let message = match entry.title {
-                    Some(value) => value.content,
-                    None => return Err(RssError::Item("No title found".to_string())),
+                let author = match entry.authors.first() {
+                    None => return Err(AtomError::Item("No author found".to_string())),
+                    Some(value) => value.name.clone(),
                 };
 
                 let commit = match entry.id.strip_prefix("tag:github.com,2008:Grit::Commit/") {
                     Some(value) => value.to_string(),
-                    None => return Err(RssError::Item("Failed to strip id".to_string())),
+                    None => return Err(AtomError::Item("Failed to strip id".to_string())),
                 };
 
                 let updated = match entry.updated {
                     Some(value) => value,
-                    None => return Err(RssError::Item("No updated time found".to_string())),
+                    None => return Err(AtomError::Item("No updated time found".to_string())),
                 };
 
                 let link = match entry.links.first() {
                     Some(value) => value.href.to_string(),
-                    None => return Err(RssError::Item("No link found".to_string())),
+                    None => return Err(AtomError::Item("No link found".to_string())),
                 };
 
-                let package = match message.split(":").collect_vec().first() {
+                let split = title.split(":").collect_vec();
+
+                let message = match split.last() {
                     Some(value) => value.to_string(),
-                    None => return Err(RssError::Item("Failed to find package".to_string())),
+                    None => return Err(AtomError::Item("Failed to find message".to_string())),
+                };
+
+                let package = match split.first() {
+                    Some(value) => value.to_string(),
+                    None => return Err(AtomError::Item("Failed to find package".to_string())),
                 };
 
                 Ok(FeedItem::new(

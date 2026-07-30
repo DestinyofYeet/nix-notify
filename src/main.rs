@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, atomic::AtomicBool},
-    time::Duration,
-};
+use std::sync::{Arc, atomic::AtomicBool};
 
 use clap::Parser;
 use django_rs::{
@@ -21,8 +18,8 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     args::Args,
-    config::{Config, FeedKind, FeedSource},
-    feed::{atomfeed::AtomFeed, feeditem::FeedItem},
+    config::{RawConfig, ValidatedFeedKind},
+    feed::{atomfeed::AtomFeed, feeditem::FeedItem, github_api_feed::GithubApiFeed},
 };
 
 pub mod args;
@@ -65,10 +62,12 @@ fn main() -> Result<(), anyhow::Error> {
         ));
     }
 
-    let configuration: Config = {
+    let configuration: RawConfig = {
         let content = std::fs::read_to_string(args.configuration)?;
         toml::from_str(&content)?
     };
+
+    let configuration = configuration.validate()?;
 
     let path = {
         match &configuration.general.database_path.parent() {
@@ -103,22 +102,29 @@ fn main() -> Result<(), anyhow::Error> {
 
     server.get_database().migrate_model::<FeedItem>()?;
 
-    for feed in configuration.feeds.iter() {
-        match feed.source {
-            FeedSource::Nixpkgs => match feed.kind {
-                FeedKind::GithubAtom => {
-                    server.get_task_handler().spawn_task(AtomFeed::new(
-                        feed.name.clone(),
-                        format!(
-                            "https://github.com/NixOS/nixpkgs/commits/{}.atom",
-                            feed.name
-                        ),
-                        Duration::from_mins(feed.delay_minutes),
+    for feed in configuration.feeds.into_iter() {
+        match feed.kind {
+            ValidatedFeedKind::Atom { url } => {
+                server
+                    .get_task_handler()
+                    .spawn_task_long_running(AtomFeed::new(feed.name, url, feed.delay))?;
+            }
+            ValidatedFeedKind::GithubApi {
+                repo_owner,
+                repo_name,
+                branch,
+            } => {
+                server
+                    .get_task_handler()
+                    .spawn_task_long_running(GithubApiFeed::new(
+                        feed.name,
+                        repo_owner,
+                        repo_name,
+                        branch,
+                        feed.delay,
+                        configuration.general.github_api_token.clone(),
                     ))?;
-                }
-                FeedKind::GithubApi => todo!(),
-            },
-            FeedSource::Custom => todo!(),
+            }
         }
     }
 

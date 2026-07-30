@@ -1,6 +1,6 @@
 [[feeds]]
 name = "nixos-unstable"
-delay_minutes = 2
+delay_minutes = 5
 source = "nixpkgs"
 kind = "github_api"
 
@@ -17,5 +17,32 @@ delay_minutes = 2
 source = "nixpkgs"
 kind = "github_atom"
 
+[[feeds]]
+name = "custom-repo"
+delay_minutes = 2
+source = "custom"
+kind = "github_atom"
+# if branch is not set, it will default to the `name` field
+branch = "custom"
+url = "https://github.com/some/repo/"
+
+[[feeds]]
+name = "custom-repo-api"
+delay_minutes = 5
+source = "custom"
+branch = "custom"
+kind = "github_api"
+repo_owner = "some"
+repo_name = "repo"
+
+
 [general]
 database_path = "tmp/database.db"
+
+# optional. You should use it if you run into rate limits
+# The unauthenticated rate limit is 60 requests per hour.
+# The authenticated rate limit is 5,000 requests per hour.
+# The program might need to make around 10 at once in order to fully sync a 1000 commit merge from nixpkgs master -> nixpkgs unstable
+#
+# Supports reading in from a file via "@:filePath"
+github_api_token = "xxx"

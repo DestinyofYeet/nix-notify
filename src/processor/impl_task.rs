@@ -35,8 +35,9 @@ where
         }
 
         logger.info(&format!(
-            "New item on '{}': {}",
+            "New item on '{}': [{}] {}",
             self.item.get_feed_name(),
+            self.item.get_package(),
             self.item.get_message()
         ));
 
