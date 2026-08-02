@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct RawConfig {
     pub(super) feeds: Vec<Feed>,
     pub(super) general: General,
+
+    #[serde(default = "Vec::new")]
     pub(super) notifications: Vec<Notification>,
 }
 
