@@ -5,7 +5,7 @@ use django_rs::{
 
 use crate::{
     config::ValidatedNotificationKind,
-    notifications::{NOTIFICATION_CONFIGS, SendNotification},
+    notifications::{NOTIFICATION_CONFIGS, SendNotification, email::SendEmail},
 };
 
 impl<D> TaskRunnable<D> for SendNotification
@@ -36,10 +36,16 @@ where
             }
         };
 
-        match notification {
-            ValidatedNotificationKind::Email(_validated_email_config) => {
-                logger.info("Sending email");
-            }
+        if let Err(e) = match notification {
+            ValidatedNotificationKind::Email(validated_email_config) => SendEmail::new(
+                &self.recipient,
+                validated_email_config,
+                &self.title,
+                &self.text,
+            )
+            .send(),
+        } {
+            logger.error(&format!("Notification error: {e}"));
         }
 
         ret_value

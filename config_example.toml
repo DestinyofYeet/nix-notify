@@ -17,24 +17,24 @@ delay_minutes = 2
 source = "nixpkgs"
 kind = "github_atom"
 
-[[feeds]]
-name = "custom-repo"
-delay_minutes = 2
-source = "custom"
-kind = "github_atom"
-# if branch is not set, it will default to the `name` field
-branch = "custom"
-repo_owner = "some"
-repo_name = "repo"
+# [[feeds]]
+# name = "custom-repo"
+# delay_minutes = 2
+# source = "custom"
+# kind = "github_atom"
+# # if branch is not set, it will default to the `name` field
+# branch = "custom"
+# repo_owner = "some"
+# repo_name = "repo"
 
-[[feeds]]
-name = "custom-repo-api"
-delay_minutes = 5
-source = "custom"
-branch = "custom"
-kind = "github_api"
-repo_owner = "some"
-repo_name = "repo"
+# [[feeds]]
+# name = "custom-repo-api"
+# delay_minutes = 5
+# source = "custom"
+# branch = "custom"
+# kind = "github_api"
+# repo_owner = "some"
+# repo_name = "repo"
 
 
 [general]
@@ -49,7 +49,6 @@ database_path = "tmp/database.db"
 github_api_token = "xxx"
 
 
-
 [[notifications]]
 name = "E-Mail"
 kind = "email"
@@ -58,3 +57,15 @@ smtp_port = 465
 envelope_from = ""
 login_username = ""
 login_password = ""
+
+[[subscriptions]]
+via = "E-Mail" # name defined above
+recipient = "your@email.com"
+feed_name = "custom-repo" # feed name defined in [[feeds]]
+packages = ["some-package"]
+
+[[subscriptions]]
+via = "E-Mail"
+recipient = "your@email.com"
+feed_name = "custom-repo-api"
+packages = ["some-other-package"]

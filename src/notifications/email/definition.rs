@@ -1,6 +1,9 @@
 use crate::config::ValidatedEmailConfig;
 
-pub struct SendEmailTask {
-    pub(super) recipient: String,
-    pub(super) email_config: ValidatedEmailConfig,
+#[derive(Debug, Clone)]
+pub struct SendEmail<'a> {
+    pub(super) recipient: &'a str,
+    pub(super) title: &'a str,
+    pub(super) content: &'a str,
+    pub(super) email_config: &'a ValidatedEmailConfig,
 }

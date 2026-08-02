@@ -17,7 +17,7 @@ impl Notification {
         match kind {
             NotificationKind::Email => {
                 let validate = |field: Option<String>, field_name: &str| {
-                    RawConfig::validate_set_and_not_emtpy(field, &name, "Notification", &field_name)
+                    RawConfig::validate_set_and_not_emtpy(field, &name, "Notification", field_name)
                 };
 
                 let smtp_host = validate(smtp_host, "stmp_host")?;

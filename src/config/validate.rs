@@ -1,25 +1,36 @@
 use std::{path::PathBuf, str::FromStr};
 
+use itertools::Itertools;
+
 use crate::config::{ConfigError, RawConfig, ValidatedConfig};
 
 impl RawConfig {
     pub fn validate(self) -> Result<ValidatedConfig, ConfigError> {
         let general = self.general.validate()?;
-        let mut feeds = Vec::with_capacity(self.feeds.len());
-        let mut notifications = Vec::with_capacity(self.notifications.len());
 
-        for feed in self.feeds {
-            feeds.push(feed.validate()?);
-        }
+        let feeds = self
+            .feeds
+            .into_iter()
+            .map(|e| e.validate())
+            .process_results(|res| res.collect_vec())?;
 
-        for notification in self.notifications {
-            notifications.push(notification.validate()?);
-        }
+        let notifications = self
+            .notifications
+            .into_iter()
+            .map(|e| e.validate())
+            .process_results(|res| res.collect_vec())?;
+
+        let subscriptions = self
+            .subscriptions
+            .into_iter()
+            .map(|sub| sub.validate())
+            .process_results(|result| result.collect_vec())?;
 
         Ok(ValidatedConfig {
             general,
             feeds,
             notifications,
+            subscriptions,
         })
     }
 
@@ -70,11 +81,9 @@ impl RawConfig {
 
                 Ok(value)
             }
-            None => {
-                return Err(ConfigError::Validate(format!(
-                    "{name_kind} {name}: {field_name} is not set!"
-                )));
-            }
+            None => Err(ConfigError::Validate(format!(
+                "{name_kind} {name}: {field_name} is not set!"
+            ))),
         }
     }
 }

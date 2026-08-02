@@ -5,6 +5,7 @@ pub struct ValidatedConfig {
     pub general: ValidatedGeneral,
     pub feeds: Vec<ValidatedFeed>,
     pub notifications: Vec<ValidatedNotification>,
+    pub subscriptions: Vec<ValidatedSubscription>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,8 +48,16 @@ pub enum ValidatedNotificationKind {
 #[derive(Debug, Clone)]
 pub struct ValidatedEmailConfig {
     pub smtp_host: String,
-    pub smtp_port: NonZero<u64>,
+    pub smtp_port: NonZero<u16>,
     pub envelope_from: String,
     pub login_username: String,
     pub login_password: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedSubscription {
+    pub via: String,
+    pub recipient: String,
+    pub feed_name: String,
+    pub packages: Vec<String>,
 }

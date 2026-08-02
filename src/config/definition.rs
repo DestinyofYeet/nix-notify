@@ -9,6 +9,9 @@ pub struct RawConfig {
 
     #[serde(default = "Vec::new")]
     pub(super) notifications: Vec<Notification>,
+
+    #[serde(default = "Vec::new")]
+    pub(super) subscriptions: Vec<Subscription>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -50,7 +53,7 @@ pub(super) struct Notification {
     pub(super) kind: NotificationKind,
     pub(super) name: String,
     pub(super) smtp_host: Option<String>,
-    pub(super) smtp_port: Option<NonZero<u64>>,
+    pub(super) smtp_port: Option<NonZero<u16>>,
     pub(super) envelope_from: Option<String>,
     pub(super) login_username: Option<String>,
     pub(super) login_password: Option<String>,
@@ -60,4 +63,12 @@ pub(super) struct Notification {
 pub(super) enum NotificationKind {
     #[serde(rename = "email")]
     Email,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(super) struct Subscription {
+    pub(super) via: String,
+    pub(super) recipient: String,
+    pub(super) feed_name: String,
+    pub(super) packages: Vec<String>,
 }

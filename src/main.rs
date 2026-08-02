@@ -11,7 +11,6 @@ use django_rs::{
     },
     tasks::logstrategy::default_strategies::tracing_strategy::TracingStrategy,
 };
-use reqwest::header::IF_NONE_MATCH;
 use signal_hook::{
     consts::{SIGHUP, TERM_SIGNALS},
     flag,
@@ -25,6 +24,7 @@ use crate::{
     config::{RawConfig, ValidatedFeedKind},
     feed::{atomfeed::AtomFeed, feeditem::FeedItem, github_api_feed::GithubApiFeed},
     notifications::NOTIFICATION_CONFIGS,
+    processor::NOTIFICATION_SUBSCRIPTIONS,
 };
 
 pub mod args;
@@ -108,7 +108,18 @@ fn main() -> Result<(), anyhow::Error> {
         }
 
         if NOTIFICATION_CONFIGS.set(notifications_map).is_err() {
-            return Err(anyhow::format_err!("Unable to initialize OnceLock"));
+            return Err(anyhow::format_err!(
+                "Unable to initialize OnceLock with Notification configs"
+            ));
+        };
+
+        if NOTIFICATION_SUBSCRIPTIONS
+            .set(configuration.subscriptions)
+            .is_err()
+        {
+            return Err(anyhow::format_err!(
+                "Unable to initialize OnceLock with subscriber configs"
+            ));
         };
     }
 
