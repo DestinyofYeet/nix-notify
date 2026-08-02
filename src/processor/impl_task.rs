@@ -23,7 +23,9 @@ where
 
         let item = match db.search_single_model::<FeedItem>(
             &db.get_connection(),
-            SearchQuery::empty().add_constraint(("commithash", self.item.get_commit())),
+            SearchQuery::empty()
+                .add_constraint(("commithash", self.item.get_commit()))
+                .add_constraint(("feed_name", self.item.get_feed_name())),
         ) {
             Ok(value) => value,
             Err(e) => {
@@ -33,6 +35,7 @@ where
         };
 
         if item.is_some() {
+            logger.trace(&format!("Item {:?} already in db", self.item));
             return ret_value;
         }
 

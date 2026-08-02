@@ -39,7 +39,7 @@ impl Model for FeedItem {
                     CreateColumn::new(
                         "commithash",
                         ColumnType::String,
-                        CreateOptions::default().set_non_nullable().set_unique(),
+                        CreateOptions::default().set_non_nullable(),
                     ),
                     CreateColumn::new(
                         "updated",

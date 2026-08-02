@@ -113,7 +113,7 @@ where
                     }
                 };
 
-                logger.trace(&format!("values: {values:?}\npage: {page}"));
+                logger.debug(&format!("fetched {} commits | page: {page}", values.len()));
 
                 if values.is_empty() {
                     break;
