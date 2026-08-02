@@ -17,24 +17,26 @@
         system = "x86_64-linux";
         inherit overlays;
       };
+
+      toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
-        nativeBuildInputs = with pkgs; [
-          (rust-bin.stable.latest.default.override {
-            extensions = [ "rust-src" ];
-          })
+        nativeBuildInputs =
+          with pkgs;
+          [
+            (rust-bin.stable.latest.default.override {
+              extensions = [ "rust-src" ];
+            })
 
-          rust-analyzer
-          sqlite.dev
-          openssl.dev
-          pkg-config
-        ];
+            rust-analyzer
+          ]
+          ++ (import ./nix/deps.nix { inherit pkgs; }).inputs;
 
         # uncomment this is you get some kind of ssl error, usually on anything networking related using reqwest
         # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
       };
 
-      packages.x86_64-linux.default = pkgs.callPackage ./pkg.nix { };
+      packages.x86_64-linux.default = pkgs.callPackage ./nix/pkg.nix { inherit toml; };
     };
 }

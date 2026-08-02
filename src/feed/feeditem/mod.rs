@@ -1,6 +1,6 @@
 mod definition;
 mod get;
-mod new;
 mod impl_model;
+mod new;
 
 pub use definition::*;

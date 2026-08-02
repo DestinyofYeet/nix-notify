@@ -4,5 +4,7 @@
 
 tmp/
 
+result
+
 config.toml
 token
