@@ -90,6 +90,8 @@ where
             let mut page: NonZeroU64 = NonZero::new(1).unwrap();
             let items_per_page: NonZeroU64 = NonZero::new(100).unwrap();
 
+            let mut newest_item: Option<FeedItem> = None;
+
             loop {
                 logger.debug(&format!(
                     "Fetching Github api for feed '{}'",
@@ -116,14 +118,24 @@ where
                 logger.debug(&format!("fetched {} commits | page: {page}", values.len()));
 
                 if values.is_empty() {
+                    logger.trace("values empty. Early exit");
                     break;
                 }
 
                 let length = values.len();
 
                 for value in values.into_iter() {
-                    if value.get_updated_at() > last_item.get_updated_at() {
-                        last_item = value.clone();
+                    if let Some(item) = newest_item.as_ref() {
+                        if value
+                            .get_updated_at()
+                            .signed_duration_since(item.get_updated_at())
+                            .num_seconds()
+                            > 0
+                        {
+                            newest_item = Some(value.clone());
+                        }
+                    } else {
+                        newest_item = Some(value.clone());
                     }
 
                     match info.spawn_task(ProcessFeedItem::new(value)) {
@@ -135,11 +147,15 @@ where
                 }
 
                 if length as u64 != items_per_page.get() {
-                    logger.trace("early break");
+                    logger.trace("values not exhausted: early break");
                     break;
                 }
 
                 page = page.checked_add(1).unwrap();
+            }
+
+            if let Some(item) = newest_item.as_ref() {
+                last_item = item.clone();
             }
 
             logger.trace(&format!("last_item post: {last_item:?}"));
