@@ -7,36 +7,47 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
     { self, nixpkgs, ... }@inputs:
-    let
-      overlays = [ (import inputs.rust-overlay) ];
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-        inherit overlays;
-      };
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
 
-      toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-    in
-    {
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        nativeBuildInputs =
-          with pkgs;
-          [
-            (rust-bin.stable.latest.default.override {
-              extensions = [ "rust-src" ];
-            })
+      let
+        overlays = [ (import inputs.rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit overlays system;
+        };
 
-            rust-analyzer
-          ]
-          ++ (import ./nix/deps.nix { inherit pkgs; }).inputs;
+        toml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs =
+            with pkgs;
+            [
+              (rust-bin.stable.latest.default.override {
+                extensions = [ "rust-src" ];
+              })
 
-        # uncomment this is you get some kind of ssl error, usually on anything networking related using reqwest
-        # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-      };
+              rust-analyzer
+            ]
+            ++ (import ./nix/deps.nix { inherit pkgs; }).inputs;
 
-      packages.x86_64-linux.default = pkgs.callPackage ./nix/pkg.nix { inherit toml; };
-    };
+          # uncomment this is you get some kind of ssl error, usually on anything networking related using reqwest
+          # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+        };
+
+        packages.default = pkgs.callPackage ./nix/pkg.nix { inherit toml; };
+
+        nixosModules.default = import ./nix/options.nix {
+          flake = self;
+          inherit toml;
+          inherit system;
+        };
+      }
+    );
 }
