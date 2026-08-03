@@ -17,6 +17,13 @@ let
     mkEnableOption
     ;
 
+  mkSubmoduleOption =
+    sub-cfg:
+    mkOption {
+      default = { };
+      type = types.submodule { options = sub-cfg; };
+    };
+
   name = toml.package.name;
 
   cfg = config.services.${name};
@@ -31,9 +38,14 @@ in
       default = flake.packages.${system}.default;
     };
 
-    settings = {
-      description = "This builds into config.toml";
-      general = {
+    user = mkOption {
+      type = types.str;
+      description = "The user to run as.";
+      default = name;
+    };
+
+    settings = mkSubmoduleOption {
+      general = mkSubmoduleOption {
         github_api_token = mkOption {
           type = types.nullOr types.str;
           description = "The github api token to use. Specify a file with '@:path'";
@@ -56,7 +68,7 @@ in
               };
 
               kind = mkOption {
-                type = types.oneOf [ "email" ];
+                type = types.enum [ "email" ];
                 description = "The notification kind";
               };
 
@@ -133,7 +145,7 @@ in
               };
 
               source = mkOption {
-                type = types.oneOf [
+                type = types.enum [
                   "custom"
                   "nixpkgs"
                 ];
@@ -141,7 +153,7 @@ in
               };
 
               kind = mkOption {
-                type = types.oneOf [
+                type = types.enum [
                   "github_api"
                   "github_atom"
                 ];
@@ -171,9 +183,24 @@ in
 
   config =
     let
-      cfgFile = pkgs.writers.writeTOML "config.toml" cfg.settings;
+      inherit (lib) filterAttrs mapAttrs;
+
+      removeNulls =
+        v:
+        if builtins.isAttrs v then
+          mapAttrs (_: removeNulls) (filterAttrs (_: v: v != null) v)
+        else if builtins.isList v then
+          builtins.filter (x: x != null) (map removeNulls v)
+        else
+          v;
+
+      cfgFile = pkgs.writers.writeTOML "config.toml" (removeNulls cfg.settings);
     in
     mkIf (cfg.enable) {
+      users.users.${cfg.user} = {
+        isSystemUser = true;
+      };
+
       systemd.services.${name} = {
         description = "${name}: notify yourself of changes";
         wantedBy = [ "multi-user.target" ];
@@ -181,9 +208,9 @@ in
           ExecStart = "${lib.getExe cfg.package} -c ${cfgFile}";
           Restart = "on-failure";
 
-          DynamicUser = true;
           StateDirectory = "${name}";
           WorkingDirectory = "/var/lib/${name}";
+          User = cfg.user;
         };
       };
     };
