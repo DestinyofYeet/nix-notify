@@ -64,7 +64,11 @@ where
                 match info.spawn_task(SendNotification::new(
                     sub.via.clone(),
                     sub.recipient.clone(),
-                    format!("[nix-notify] {}", self.item.get_package()),
+                    format!(
+                        "[nix-notify] '{}': {}",
+                        self.item.get_feed_name(),
+                        self.item.get_package()
+                    ),
                     self.item.get_message().to_string(),
                 )) {
                     Ok(_) => {}
