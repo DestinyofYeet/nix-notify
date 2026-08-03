@@ -44,6 +44,12 @@ in
       default = name;
     };
 
+    group = mkOption {
+      type = types.str;
+      description = "The group to run as.";
+      default = name;
+    };
+
     settings = mkSubmoduleOption {
       general = mkSubmoduleOption {
         github_api_token = mkOption {
@@ -199,7 +205,10 @@ in
     mkIf (cfg.enable) {
       users.users.${cfg.user} = {
         isSystemUser = true;
+        group = cfg.group;
       };
+
+      users.groups.${cfg.group} = { };
 
       systemd.services.${name} = {
         description = "${name}: notify yourself of changes";
